@@ -13,8 +13,6 @@ import {
 import { getLlamaPrices } from "./prices";
 import {
   getBridgeID,
-  queryAggregatedHourlyDataAtTimestamp,
-  queryAggregatedDailyDataAtTimestamp,
   getLargeTransaction,
 } from "./wrappa/postgres/query";
 import {
@@ -29,6 +27,8 @@ import { importBridgeNetwork } from "../data/importBridgeNetwork";
 import { defaultConfidenceThreshold } from "./constants";
 import { transformTokenDecimals, transformTokens } from "../helpers/tokenMappings";
 import { blacklist } from "../data/blacklist";
+import { newIBCAdapter, newIBCBridgeNetwork } from "../adapters/ibc";
+import { BridgeNetwork } from "../data/types";
 
 const nullPriceCountThreshold = 10; // insert error when there are more than this many prices missing per hour/day for a bridge
 
@@ -54,9 +54,21 @@ export const runAggregateDataHistorical = async (
   chainToRestrictTo?: string
 ) => {
   const currentTimestamp = getCurrentUnixTimestamp() * 1000;
-  const bridgeNetwork = importBridgeNetwork(undefined, bridgeNetworkId);
+  let bridgeNetwork = importBridgeNetwork(undefined, bridgeNetworkId);
+
+  if(!bridgeNetwork) {
+    const errString = `Bridge network with id ${bridgeNetworkId} not found.`;
+    await insertErrorRow({
+      ts: currentTimestamp,
+      target_table: hourly ? "hourly_aggregated" : "daily_aggregated",
+      keyword: "critical",
+      error: errString,
+    });
+    throw new Error(errString);
+  }
+
   const { bridgeDbName, largeTxThreshold } = bridgeNetwork!;
-  const adapter = adapters[bridgeDbName];
+  let adapter = adapters[bridgeDbName];
 
   if (!adapter) {
     const errString = `Adapter for ${bridgeDbName} not found, check it is exported correctly.`;
@@ -68,12 +80,19 @@ export const runAggregateDataHistorical = async (
     });
     throw new Error(errString);
   }
+
+  if(bridgeNetwork.bridgeDbName === "ibc") {
+    bridgeNetwork = await newIBCBridgeNetwork(bridgeNetwork);
+    adapter = newIBCAdapter(bridgeNetwork);
+  }
+  
   const chains = Object.keys(adapter);
+ 
   let timestamp = endTimestamp;
   while (timestamp > startTimestamp) {
     if (chainToRestrictTo) {
       try {
-        await aggregateData(timestamp, bridgeDbName, chainToRestrictTo, hourly, largeTxThreshold);
+        await aggregateData(timestamp, bridgeNetwork, chainToRestrictTo, hourly, largeTxThreshold);
       } catch (e: any) {
         const errString = `Unable to aggregate data for ${bridgeDbName} on chain ${chainToRestrictTo}, skipping. ${e?.message}`;
         await insertErrorRow({
@@ -88,7 +107,7 @@ export const runAggregateDataHistorical = async (
       const chainsPromises = Promise.all(
         chains.map(async (chain) => {
           try {
-            await aggregateData(timestamp, bridgeDbName, chain, hourly, largeTxThreshold);
+            await aggregateData(timestamp, bridgeNetwork, chain, hourly, largeTxThreshold);
           } catch (e: any) {
             const errString = `Unable to aggregate data for ${bridgeDbName} on chain ${chain}, skipping.${e?.message}`;
             await insertErrorRow({
@@ -118,7 +137,7 @@ export const runAggregateDataAllAdapters = async (timestamp: number, hourly: boo
       const chainsPromises = Promise.all(
         chains.map(async (chain) => {
           try {
-            await aggregateData(timestamp, bridgeDbName, chain, hourly, largeTxThreshold);
+            await aggregateData(timestamp, bridgeNetwork, chain, hourly, largeTxThreshold);
           } catch (e) {
             const errString = `Unable to aggregate hourly data for ${bridgeDbName} on chain ${chain}, skipping.`;
             await insertErrorRow({
@@ -146,15 +165,15 @@ Aggregates hourly data for the hour previous to timestamp's current hour, and da
 */
 export const aggregateData = async (
   timestamp: number,
-  bridgeDbName: string,
+  bridgeNetwork: BridgeNetwork,
   chain: string,
   hourly?: boolean,
   largeTxThreshold?: number
 ) => {
   const currentTimestamp = getCurrentUnixTimestamp() * 1000;
-  const bridgeID = (await getBridgeID(bridgeDbName, chain))?.id;
+  const bridgeID = (await getBridgeID(bridgeNetwork.bridgeDbName, chain))?.id;
   if (!bridgeID) {
-    const errString = `Could not find ID for ${bridgeDbName} on chain ${chain}, make sure it is added to config db.`;
+    const errString = `Could not find ID for ${bridgeNetwork.bridgeDbName} on chain ${chain}, make sure it is added to config db.`;
     await insertErrorRow({
       ts: currentTimestamp,
       target_table: hourly ? "hourly_aggregated" : "daily_aggregated",
@@ -248,6 +267,8 @@ export const aggregateData = async (
         if (!token || !chain) return;
         const tokenL = token.toLowerCase();
         uniqueTokens[transformTokens[chain]?.[tokenL] ?? `${chain}:${tokenL}`] = true;
+      } else {
+        uniqueTokens[`${chain}:${token}`] = true;
       }
     })
   );
@@ -283,6 +304,7 @@ export const aggregateData = async (
       let tokenKey = null;
       if (is_usd_volume) {
         usdValue = rawBnAmount.toNumber();
+        tokenKey = `${chain}:${token}`
       } else {
         const tokenL = token.toLowerCase();
         const transformedDecimals = transformTokenDecimals[chain]?.[tokenL] ?? null;
@@ -335,7 +357,7 @@ export const aggregateData = async (
         } else {
           totalDepositTxs += 1;
         }
-        if (!is_usd_volume && tokenKey) {
+        if (tokenKey) {
           cumTokensDeposited[tokenKey] = cumTokensDeposited[tokenKey] || {};
           cumTokensDeposited[tokenKey].amount = cumTokensDeposited[tokenKey].amount
             ? cumTokensDeposited[tokenKey].amount.plus(rawBnAmount)
@@ -356,7 +378,7 @@ export const aggregateData = async (
         } else {
           totalWithdrawalTxs += 1;
         }
-        if (!is_usd_volume && tokenKey) {
+        if (tokenKey) {
           cumTokensWithdrawn[tokenKey] = cumTokensWithdrawn[tokenKey] || {};
           cumTokensWithdrawn[tokenKey].amount = cumTokensWithdrawn[tokenKey].amount
             ? cumTokensWithdrawn[tokenKey].amount.plus(rawBnAmount)

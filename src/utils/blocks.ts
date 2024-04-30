@@ -4,6 +4,8 @@ import { tronGetLatestBlock } from "../helpers/tron";
 import { getConnection } from "../helpers/solana";
 import { Chain } from "@defillama/sdk/build/general";
 import fetch from "node-fetch";
+import { BridgeNetwork } from "../data/types";
+import { ibcGetBlockFromTimestamp } from "../adapters/ibc";
 const retry = require("async-retry");
 
 export async function getLatestBlockNumber(chain: string): Promise<number> {
@@ -67,8 +69,18 @@ export async function getLatestBlock(chain: string): Promise<{ number: number; t
   return await lookupBlock(timestamp, { chain });
 }
 
-export async function getBlockByTimestamp(timestamp: number, chain: Chain) {
-  if (chain === "solana") {
+export async function getBlockByTimestamp(
+  timestamp: number,
+  chain: Chain,
+  bridge: BridgeNetwork,
+  position?: "First" | "Last"
+) 
+  {
+  if (bridge.bridgeDbName === "ibc") {
+    return await ibcGetBlockFromTimestamp(bridge, timestamp, chain, position);
+  }
+
+  else if (chain === "solana") {
     const { timestamp: latestTimestamp, number } = await getLatestBlock(chain);
     // There is not an easy way to get the slot number from a timestamp on Solana
     // without hammering the RPC node with requests.
