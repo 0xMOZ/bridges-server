@@ -267,8 +267,6 @@ export const aggregateData = async (
         if (!token || !chain) return;
         const tokenL = token.toLowerCase();
         uniqueTokens[transformTokens[chain]?.[tokenL] ?? `${chain}:${tokenL}`] = true;
-      } else {
-        uniqueTokens[`${chain}:${token}`] = true;
       }
     })
   );
