@@ -482,7 +482,7 @@ export const runAdapterHistorical = async (
         for (let i = 0; i < filteredEvents?.length; i++) {
           let log = filteredEvents[i];
 
-          const { txHash, blockNumber, from, to, token, amount, isDeposit, chainOverride, isUSDVolume, txsCountedAs } =
+          const { txHash, blockNumber, from, to, token, amount, isDeposit, chainOverride, isUSDVolume, txsCountedAs, timestamp: realBlockTimestamp } =
             log;
           const bucket = Math.floor(((blockNumber - minBlock) * 9) / blockRange);
           const timestamp = blockTimestamps[bucket] * 1000;
@@ -531,7 +531,7 @@ export const runAdapterHistorical = async (
                 bridge_id: bridgeIdOverride,
                 chain: chainContractsAreOn,
                 tx_hash: txHash ?? null,
-                ts: timestamp,
+                ts: realBlockTimestamp ?? timestamp,
                 tx_block: blockNumber ?? null,
                 tx_from: from ?? null,
                 tx_to: to ?? null,
