@@ -70,20 +70,38 @@ export const getZoneDataByBlock = async (
   zoneName: string,
   fromBlock: number,
   toBlock: number
-): Promise<DefillamaTxsByBlockQueryResult> => {
+): Promise<DefillamaTxsByBlockQueryResult | undefined> => {
   const variables = {
     blockchain: zoneName,
     from: fromBlock,
     to: toBlock,
   };
-  const data = await graphQLClient.request(DefillamaTxsByBlockDocument, variables);
-  return data;
+  
+  // retry helper does not seem to work properly here
+  // so we will retry manually
+  for(let i = 0; i < 3; i++) {
+    try {
+      return await graphQLClient.request(DefillamaTxsByBlockDocument, variables);
+    } catch (e) {
+      console.error(e);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+
 };
 
 export const getIbcVolumeByZoneId = (chainId: string) => {
   // @ts-ignore
   return async (fromBlock: number, toBlock: number) => {
-    const zoneData = await getZoneDataByBlock(chainId, fromBlock, toBlock);
+
+    let zoneData: DefillamaTxsByBlockQueryResult | undefined;
+
+    zoneData = await getZoneDataByBlock(chainId, fromBlock, toBlock);
+
+    if (!zoneData) {
+      return [];
+    }
+
     return zoneData.flat_defillama_txs.map(
       (tx: {
         destination_address: string;
