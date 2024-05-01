@@ -389,9 +389,15 @@ export const runAdapterHistorical = async (
     });
     throw new Error(errString);
   }
-  const maxBlocksToQuery = maxBlocksToQueryByChain[chainContractsAreOn]
+  let maxBlocksToQuery = maxBlocksToQueryByChain[chainContractsAreOn]
     ? maxBlocksToQueryByChain[chainContractsAreOn]
     : maxBlocksToQueryByChain.default;
+
+  // to reduce calls to moz api
+  if(bridgeDbName === 'ibc') {
+    maxBlocksToQuery = 5000;
+  }
+
   const useChainBlocks = !(nonBlocksChains.includes(chainContractsAreOn) || ["ibc"].includes(bridgeDbName));
   let block = startBlock;
   console.log(`Searching for transactions for ${bridgeDbName} on ${chain} from ${startBlock} to ${endBlock}.`);
