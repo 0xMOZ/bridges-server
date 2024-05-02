@@ -1,7 +1,27 @@
 import { BridgeNetwork } from "../../data/types";
 import { BridgeAdapter } from "../../helpers/bridgeAdapter.type";
-import { ChainFromMapOfZones, getBlockFromTimestamp, getIbcVolumeByZoneId, getSupportedChains } from "../../helpers/mapofzones";
+import { 
+  ChainFromMapOfZones, 
+  getBlockFromTimestamp, 
+  getIbcVolumeByZoneId, 
+  getSupportedChains,
+  getLatestBlockForZone
+} from "../../helpers/mapofzones";
 
+
+export const getLatestBlockForZoneFromMoz = async (zoneId: string): Promise<{
+  number: number;
+  timestamp: number;
+}> => {
+  const block = await getLatestBlockForZone(zoneId);
+  if (!block) {
+    throw new Error(`No block found for zone ${zoneId}`);
+  }
+  return {
+    number: block.block,
+    timestamp: block.timestamp,
+  };
+}
 
 export const findChainIdFromChainName = (bridgeNetwork: BridgeNetwork, chainName: string) => {
   if (bridgeNetwork.chainMapping === undefined) {

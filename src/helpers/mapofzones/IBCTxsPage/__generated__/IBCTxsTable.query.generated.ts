@@ -6,6 +6,16 @@
 import * as Types from '../../base-types';
 
 import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
+export type DefillamaLatestBlockForZoneQueryVariables = Types.Exact<{
+  blockchain: Types.Scalars['String'];
+}>;
+
+export type DefillamaLatestBlockForZoneQueryResult = {
+  flat_defillama_txs_aggregate: {
+    aggregate?: { max?: { height?: any | null; timestamp?: any | null } | null } | null;
+  };
+};
+
 export type DefillamaSupportedZonesQueryVariables = Types.Exact<{ [key: string]: never }>;
 
 export type DefillamaSupportedZonesQueryResult = {
@@ -70,6 +80,91 @@ export type DefillamaTxsLastBlockQueryResult = {
   flat_defillama_txs_aggregate: { aggregate?: { max?: { height?: any | null } | null } | null };
 };
 
+export const DefillamaLatestBlockForZoneDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'DefillamaLatestBlockForZone' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'blockchain' } },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'flat_defillama_txs_aggregate' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'where' },
+                value: {
+                  kind: 'ObjectValue',
+                  fields: [
+                    {
+                      kind: 'ObjectField',
+                      name: { kind: 'Name', value: 'blockchain' },
+                      value: {
+                        kind: 'ObjectValue',
+                        fields: [
+                          {
+                            kind: 'ObjectField',
+                            name: { kind: 'Name', value: '_eq' },
+                            value: {
+                              kind: 'Variable',
+                              name: { kind: 'Name', value: 'blockchain' },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'aggregate' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'max' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            { kind: 'Field', name: { kind: 'Name', value: 'height' } },
+                            { kind: 'Field', name: { kind: 'Name', value: 'timestamp' } },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  DefillamaLatestBlockForZoneQueryResult,
+  DefillamaLatestBlockForZoneQueryVariables
+>;
 export const DefillamaSupportedZonesDocument = {
   kind: 'Document',
   definitions: [

@@ -9,6 +9,8 @@ import {
   DefillamaTxsFirstBlockQueryResult,
   DefillamaSupportedZonesQueryResult,
   DefillamaSupportedZonesDocument,
+  DefillamaLatestBlockForZoneQueryResult,
+  DefillamaLatestBlockForZoneDocument,
 } from "./IBCTxsPage/__generated__/IBCTxsTable.query.generated";
 import retry from "async-retry"
 
@@ -46,6 +48,30 @@ export const getSupportedChains = async (): Promise<
     zone_id: zone.network_id,
     zone_logo: zone.logo_url,
   }));
+}
+
+export const getLatestBlockForZone = async (zoneId: string): Promise<{
+  block: number;
+  timestamp: number;
+} | undefined> => {
+  const variables = {
+    blockchain: zoneId,
+  };
+  const block = await retry(async () => {
+    const data: DefillamaLatestBlockForZoneQueryResult = await graphQLClient.request(DefillamaLatestBlockForZoneDocument, variables);
+    return {
+      block: data.flat_defillama_txs_aggregate.aggregate?.max?.height,
+      timestamp: data.flat_defillama_txs_aggregate.aggregate?.max?.timestamp,
+    };
+  }, {
+    retries: 5,
+    minTimeout: 5000,
+  });
+
+  return block ? {
+    block: block.block,
+    timestamp: block.timestamp,
+  } : undefined;
 }
 
 export const getBlockFromTimestamp = async (timestamp: number, chainId: string, position: "First" | "Last"): Promise<{
