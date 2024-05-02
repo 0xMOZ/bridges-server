@@ -11,9 +11,11 @@
     "daily-volume": "export $(cat .env.test | xargs) &&  tsx ./src/utils/testDailyVolume.ts"
   },
   "devDependencies": {
+    "@types/async-retry": "^1.4.8",
     "@types/aws-lambda": "^8.10.101",
     "@types/node": "^18.6.4",
     "@types/node-fetch": "^2.6.2",
+    "@types/retry": "^0.12.5",
     "babel-loader": "^8.2.5",
     "eslint-config-prettier": "^8.3.0",
     "prettier": "^2.5.1",
