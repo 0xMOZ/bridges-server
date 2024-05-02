@@ -10,6 +10,8 @@ import {
   DefillamaSupportedZonesQueryResult,
   DefillamaSupportedZonesDocument,
 } from "./IBCTxsPage/__generated__/IBCTxsTable.query.generated";
+import retry from "async-retry"
+
 import { convertToUnixTimestamp } from "../../utils/date";
 const endpoint = "https://api2.mapofzones.com/v1/graphql";
 const graphQLClient = new GraphQLClient(endpoint);
@@ -23,8 +25,18 @@ export type ChainFromMapOfZones = {
 export const getSupportedChains = async (): Promise<
   ChainFromMapOfZones[]
 > => {
-  const variables = {};
-  const data: DefillamaSupportedZonesQueryResult = await graphQLClient.request(DefillamaSupportedZonesDocument, variables);
+  const data: DefillamaSupportedZonesQueryResult | undefined = await retry(async () => {
+    const variables = {};
+    return await graphQLClient.request(DefillamaSupportedZonesDocument, variables);
+  }, {
+    retries: 5,
+    minTimeout: 5000,
+  });
+  
+  if (!data) {
+    throw new Error("No zones found");
+  }
+
   if (!data.flat_blockchains) {
     throw new Error("No zones found");
   }
@@ -48,18 +60,21 @@ export const getBlockFromTimestamp = async (timestamp: number, chainId: string, 
     timestamp: date.toISOString(),
   };
 
-  let block;
-
-  if (position === "First") {
-    const data: DefillamaTxsFirstBlockQueryResult = await graphQLClient.request(
-      DefillamaTxsFirstBlockDocument,
-      variables
-    );
-    block = data.flat_defillama_txs_aggregate.aggregate?.min?.height;
-  } else if (position === "Last") {
-    const data: DefillamaTxsLastBlockQueryResult = await graphQLClient.request(DefillamaTxsLastBlockDocument, variables);
-    block = data.flat_defillama_txs_aggregate.aggregate?.max?.height;
-  }
+  const block = await retry(async () => {
+    if (position === "First") {
+      const data: DefillamaTxsFirstBlockQueryResult = await graphQLClient.request(
+        DefillamaTxsFirstBlockDocument,
+        variables
+      );
+      return data.flat_defillama_txs_aggregate.aggregate?.min?.height;
+    } else if (position === "Last") {
+      const data: DefillamaTxsLastBlockQueryResult = await graphQLClient.request(DefillamaTxsLastBlockDocument, variables);
+      return data.flat_defillama_txs_aggregate.aggregate?.max?.height;
+    }
+  }, {
+    retries: 5,
+    minTimeout: 5000,
+  });
   
   return block ? {
     block
@@ -78,18 +93,14 @@ export const getZoneDataByBlock = async (
     to: toBlock,
   };
   
-  // retry helper does not seem to work properly here
-  // so we will retry manually
-  for(let i = 0; i < 3; i++) {
-    try {
-      return await graphQLClient.request(DefillamaTxsByBlockDocument, variables);
-    } catch (e) {
-      console.error(e);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+  return await retry(async () => {
+    return await graphQLClient.request(DefillamaTxsByBlockDocument, variables);
   }
-
-};
+  , {
+    retries: 5,
+    minTimeout: 5000,
+  });
+}
 
 export const getIbcVolumeByZoneId = (chainId: string) => {
   // @ts-ignore
