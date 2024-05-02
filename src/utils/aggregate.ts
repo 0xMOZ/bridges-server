@@ -326,28 +326,32 @@ export const aggregateData = async (
           }
 
           usdValue = bnAmount.multipliedBy(Number(price)).toNumber();
-          if (usdValue > 10 ** 9) {
-            const errString = `USD value of tx id ${id} is ${usdValue}.`;
-            await insertErrorRow({
-              ts: currentTimestamp,
-              target_table: hourly ? "hourly_aggregated" : "daily_aggregated",
-              keyword: "data",
-              error: errString,
-            });
-          }
-          if (usdValue > 10 ** 10) {
-            console.error(`USD value of tx id ${id} is over 10 billion, skipping.`);
-            return;
-          }
-          if (largeTxThreshold && id && usdValue > largeTxThreshold) {
-            largeTxs.push({
-              id: id,
-              ts: ts,
-              usdValue: usdValue,
-            });
-          }
         }
       }
+
+      if(usdValue) {
+        if (usdValue > 10 ** 9) {
+          const errString = `USD value of tx id ${id} is ${usdValue}.`;
+          await insertErrorRow({
+            ts: currentTimestamp,
+            target_table: hourly ? "hourly_aggregated" : "daily_aggregated",
+            keyword: "data",
+            error: errString,
+          });
+        }
+        if (usdValue > 10 ** 10) {
+          console.error(`USD value of tx id ${id} is over 10 billion, skipping.`);
+          return;
+        }
+        if (largeTxThreshold && id && usdValue > largeTxThreshold) {
+          largeTxs.push({
+            id: id,
+            ts: ts,
+            usdValue: usdValue,
+          });
+        }
+      }
+      
       if (is_deposit) {
         totalDepositedUsd += usdValue ?? 0;
         if (txs_counted_as) {
