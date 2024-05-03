@@ -34,6 +34,8 @@ export const getSupportedChains = async (): Promise<
     retries: 5,
     minTimeout: 5000,
     onRetry: (e, attempt) => {
+      console.log(`Error fetching supported chains`)
+      console.error(e);
       console.log(`Retrying ${attempt} for fetching supported chains`)
     }
   });
@@ -61,21 +63,17 @@ export const getLatestBlockForZone = async (zoneId: string): Promise<{
     blockchain: zoneId,
   };
   const block = await retry(async () => {
-    try {
-      const data: DefillamaLatestBlockForZoneQueryResult = await graphQLClient.request(DefillamaLatestBlockForZoneDocument, variables);
-      return {
-        block: data.flat_defillama_txs_aggregate.aggregate?.max?.height,
-        timestamp: data.flat_defillama_txs_aggregate.aggregate?.max?.timestamp,
-      };
-    } catch(e) {
-      console.log(`Error fetching latest block for ${zoneId}`)
-      console.error(e);
-      throw e;
-    }
+    const data: DefillamaLatestBlockForZoneQueryResult = await graphQLClient.request(DefillamaLatestBlockForZoneDocument, variables);
+    return {
+      block: data.flat_defillama_txs_aggregate.aggregate?.max?.height,
+      timestamp: data.flat_defillama_txs_aggregate.aggregate?.max?.timestamp,
+    };
   }, {
     retries: 5,
     minTimeout: 5000,
     onRetry: (e, attempt) => {
+      console.log(`Error fetching latest block for ${zoneId}`)
+      console.error(e);
       console.log(`Retrying ${attempt} for fetching latest block for ${zoneId}`)
     }
   });
@@ -99,26 +97,22 @@ export const getBlockFromTimestamp = async (timestamp: number, chainId: string, 
   };
 
   const block = await retry(async () => {
-    try {
-      if (position === "First") {
-        const data: DefillamaTxsFirstBlockQueryResult = await graphQLClient.request(
-          DefillamaTxsFirstBlockDocument,
-          variables
-        );
-        return data.flat_defillama_txs_aggregate.aggregate?.min?.height;
-      } else if (position === "Last") {
-        const data: DefillamaTxsLastBlockQueryResult = await graphQLClient.request(DefillamaTxsLastBlockDocument, variables);
-        return data.flat_defillama_txs_aggregate.aggregate?.max?.height;
-      }
-    } catch(e) {
-      console.log(`Error fetching data for ${chainId} at ${position} block from ${timestamp}`)
-      console.error(e);
-      throw e;
+    if (position === "First") {
+      const data: DefillamaTxsFirstBlockQueryResult = await graphQLClient.request(
+        DefillamaTxsFirstBlockDocument,
+        variables
+      );
+      return data.flat_defillama_txs_aggregate.aggregate?.min?.height;
+    } else if (position === "Last") {
+      const data: DefillamaTxsLastBlockQueryResult = await graphQLClient.request(DefillamaTxsLastBlockDocument, variables);
+      return data.flat_defillama_txs_aggregate.aggregate?.max?.height;
     }
   }, {
     retries: 5,
     minTimeout: 5000,
     onRetry: (e, attempt) => {
+      console.log(`Error fetching data for ${chainId} at ${position} block from ${timestamp}`)
+      console.error(e);
       console.log(`Retrying ${attempt} for ${chainId} at ${position} block from ${timestamp}`)
     }
   });
@@ -141,18 +135,14 @@ export const getZoneDataByBlock = async (
   };
   
   return await retry(async () => {
-    try {
-      return await graphQLClient.request(DefillamaTxsByBlockDocument, variables);
-    } catch(e) {
-      console.log(`Error fetching data for ${zoneName} from block ${fromBlock} to ${toBlock}`)
-      console.error(e);
-      throw e;
-    }
+    return await graphQLClient.request(DefillamaTxsByBlockDocument, variables);
   }
   , {
     retries: 5,
     minTimeout: 5000,
     onRetry: (e, attempt) => {
+      console.log(`Error fetching data for ${zoneName} from block ${fromBlock} to ${toBlock}`)
+      console.error(e);
       console.log(`Retrying ${attempt} for ${zoneName} from block ${fromBlock} to ${toBlock}`)
     }
   });
