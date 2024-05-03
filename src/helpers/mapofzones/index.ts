@@ -1,4 +1,4 @@
-import { GraphQLClient } from "graphql-request";
+import { GraphQLClient, RequestDocument } from "graphql-request";
 import { EventData } from "../../utils/types";
 import {
   DefillamaTxsByBlockDocument,
@@ -18,6 +18,26 @@ import { convertToUnixTimestamp } from "../../utils/date";
 const endpoint = "https://api2.mapofzones.com/v1/graphql";
 const graphQLClient = new GraphQLClient(endpoint);
 
+const requestWithTimeout = async <T>(query: RequestDocument, variables = {}, timeout = 10000): Promise<T> => {
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error('GraphQL request timed out'));
+    }, timeout);
+  });
+
+  try {
+    const data = await Promise.race([
+      graphQLClient.request(query, variables) as T,
+      timeoutPromise,
+    ]);
+    return data;
+  } catch (error) {
+    console.error('GraphQL request error:', error);
+    throw error;
+  }
+};
+
+
 export type ChainFromMapOfZones = {
   zone_name: string;
   zone_id: string;
@@ -29,7 +49,7 @@ export const getSupportedChains = async (): Promise<
 > => {
   const data: DefillamaSupportedZonesQueryResult | undefined = await retry(async () => {
     const variables = {};
-    return await graphQLClient.request(DefillamaSupportedZonesDocument, variables);
+    return await requestWithTimeout(DefillamaSupportedZonesDocument, variables);
   }, {
     retries: 5,
     minTimeout: 5000,
@@ -63,7 +83,7 @@ export const getLatestBlockForZone = async (zoneId: string): Promise<{
     blockchain: zoneId,
   };
   const block = await retry(async () => {
-    const data: DefillamaLatestBlockForZoneQueryResult = await graphQLClient.request(DefillamaLatestBlockForZoneDocument, variables);
+    const data = await requestWithTimeout<DefillamaLatestBlockForZoneQueryResult>(DefillamaLatestBlockForZoneDocument, variables)
     return {
       block: data.flat_defillama_txs_aggregate.aggregate?.max?.height,
       timestamp: data.flat_defillama_txs_aggregate.aggregate?.max?.timestamp,
@@ -98,13 +118,10 @@ export const getBlockFromTimestamp = async (timestamp: number, chainId: string, 
 
   const block = await retry(async () => {
     if (position === "First") {
-      const data: DefillamaTxsFirstBlockQueryResult = await graphQLClient.request(
-        DefillamaTxsFirstBlockDocument,
-        variables
-      );
+      const data = await requestWithTimeout<DefillamaTxsFirstBlockQueryResult>(DefillamaTxsFirstBlockDocument, variables);
       return data.flat_defillama_txs_aggregate.aggregate?.min?.height;
     } else if (position === "Last") {
-      const data: DefillamaTxsLastBlockQueryResult = await graphQLClient.request(DefillamaTxsLastBlockDocument, variables);
+      const data = await requestWithTimeout<DefillamaTxsLastBlockQueryResult>(DefillamaTxsLastBlockDocument, variables);
       return data.flat_defillama_txs_aggregate.aggregate?.max?.height;
     }
   }, {
@@ -135,7 +152,7 @@ export const getZoneDataByBlock = async (
   };
   
   return await retry(async () => {
-    return await graphQLClient.request(DefillamaTxsByBlockDocument, variables);
+    return await requestWithTimeout<DefillamaTxsByBlockQueryResult>(DefillamaTxsByBlockDocument, variables);
   }
   , {
     retries: 5,
