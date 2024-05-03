@@ -29,41 +29,41 @@ async function fillAdapterHistorical(
     adapter = await newIBCBridgeNetwork(adapter);
   }
 
-  const promises = Promise.all(
-    adapter.chains.map(async (chain, i) => {
-      let nChain;
-      if (adapter.chainMapping && adapter.chainMapping[chain.toLowerCase()]) {
-        nChain = adapter.chainMapping[chain.toLowerCase()];
-      } else {
-        nChain = chain.toLowerCase();
-      }
-      if (restrictChainTo && nChain !== restrictChainTo) return;
-      if (nChain === adapter?.destinationChain?.toLowerCase()) return;
+  for(const chain of adapter.chains) {
+    console.log(`Running adapter from ${startTimestamp} to ${endTimestamp} for ${bridgeDbName} on ${chain}`)
+    let nChain;
+    if (adapter.chainMapping && adapter.chainMapping[chain.toLowerCase()]) {
+      nChain = adapter.chainMapping[chain.toLowerCase()];
+    } else {
+      nChain = chain.toLowerCase();
+    }
+    if (restrictChainTo && nChain !== restrictChainTo) return;
+    if (nChain === adapter?.destinationChain?.toLowerCase()) return;
 
-      await wait(500 * i);
-      const startBlock = await getBlockByTimestamp(startTimestamp, nChain as Chain, adapter, "First");
-      if (!startBlock) {
-        console.error(`Could not find start block for ${chain} on ${bridgeDbName}`);
-        return;
-      }
-      const endBlock = await getBlockByTimestamp(endTimestamp, nChain as Chain, adapter, "Last");
-      if (!endBlock) {
-        console.error(`Could not find end block for ${chain} on ${bridgeDbName}`);
-        return;
-      }
+    await wait(500);
+    console.log("Getting start block")
+    const startBlock = await getBlockByTimestamp(startTimestamp, nChain as Chain, adapter, "First");
+    if (!startBlock) {
+      console.error(`Could not find start block for ${chain} on ${bridgeDbName}`);
+      continue;
+    }
+    console.log("Getting end block")
+    const endBlock = await getBlockByTimestamp(endTimestamp, nChain as Chain, adapter, "Last");
+    if (!endBlock) {
+      console.error(`Could not find end block for ${chain} on ${bridgeDbName}`);
+      continue;
+    }
 
-      await runAdapterHistorical(
-        startBlock.block,
-        endBlock.block,
-        adapter,
-        chain.toLowerCase(),
-        true,
-        false,
-        "upsert"
-      );
-    })
-  );
-  await promises;
+    await runAdapterHistorical(
+      startBlock.block,
+      endBlock.block,
+      adapter,
+      chain.toLowerCase(),
+      true,
+      false,
+      "upsert"
+    );
+  }
   console.log(`Finished running adapter from ${startTimestamp} to ${endTimestamp} for ${bridgeDbName}`);
 }
 
