@@ -29,31 +29,24 @@ async function fillAdapterHistorical(
     adapter = await newIBCBridgeNetwork(adapter);
   }
 
-  const chunkSize = 20;
-  const chunks = [];
-  for (let i = 0; i < adapter.chains.length; i += chunkSize) {
-    chunks.push(adapter.chains.slice(i, i + chunkSize));
-  }
-  
-  for(let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i];
-    const promises = chunk
-    .map(async (chain, i) => {
-      let nChain = chain.toLowerCase();
+  const promises = Promise.all(
+    adapter.chains.map(async (chain, i) => {
+      let nChain;
       if (adapter.chainMapping && adapter.chainMapping[chain.toLowerCase()]) {
         nChain = adapter.chainMapping[chain.toLowerCase()];
+      } else {
+        nChain = chain.toLowerCase();
       }
       if (restrictChainTo && nChain !== restrictChainTo) return;
       if (nChain === adapter?.destinationChain?.toLowerCase()) return;
 
       await wait(500 * i);
-
-      const startBlock = await getBlockByTimestamp(startTimestamp, chain as Chain, adapter, "First");
+      const startBlock = await getBlockByTimestamp(startTimestamp, nChain as Chain, adapter, "First");
       if (!startBlock) {
         console.error(`Could not find start block for ${chain} on ${bridgeDbName}`);
         return;
       }
-      const endBlock = await getBlockByTimestamp(endTimestamp, chain as Chain, adapter, "Last");
+      const endBlock = await getBlockByTimestamp(endTimestamp, nChain as Chain, adapter, "Last");
       if (!endBlock) {
         console.error(`Could not find end block for ${chain} on ${bridgeDbName}`);
         return;
@@ -68,10 +61,9 @@ async function fillAdapterHistorical(
         false,
         "upsert"
       );
-    });
-
-    await Promise.all(promises);
-  }
+    })
+  );
+  await promises;
   console.log(`Finished running adapter from ${startTimestamp} to ${endTimestamp} for ${bridgeDbName}`);
 }
 
