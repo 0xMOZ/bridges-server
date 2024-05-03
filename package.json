@@ -35,7 +35,7 @@
     "dotenv": "^8.2.0",
     "ethers": "^5",
     "graphql": "^16.0.0",
-    "graphql-request": "^4.0.0",
+    "graphql-request": "^6.1.0",
     "node-fetch": "^2.6.7",
     "postgres": "^3.2.4",
     "serverless-webpack": "^5.8.0",
