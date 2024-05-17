@@ -18,7 +18,7 @@ import { convertToUnixTimestamp } from "../../utils/date";
 const endpoint = "https://api2.mapofzones.com/v1/graphql";
 const graphQLClient = new GraphQLClient(endpoint);
 
-const requestWithTimeout = async <T>(query: RequestDocument, variables = {}, timeout = 40000): Promise<T> => {
+const requestWithTimeout = async <T>(query: RequestDocument, variables = {}, timeout = 5000): Promise<T> => {
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => {
       reject(new Error('GraphQL request timed out'));
