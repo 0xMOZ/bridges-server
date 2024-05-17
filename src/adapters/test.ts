@@ -47,11 +47,18 @@ const testAdapter = async () => {
         ? bridgeNetwork.chainMapping?.[chain as Chain]
         : chain;
       let block = undefined;
-      block = await getLatestBlock(contractsChain, bridgeNetwork.bridgeDbName);
-      
-      if (!block) {
-        throw new Error(`Unable to get latest block for ${adapterName} adapter on chain ${contractsChain}.`);
+
+      try {
+        block = await getLatestBlock(contractsChain, bridgeNetwork.bridgeDbName);
+        if (!block) {
+          throw new Error(`Unable to get latest block for ${adapterName} adapter on chain ${contractsChain}.`);
+        }
+      } catch(e) {
+        // in case thrown internally from the bridge adapter
+        console.error(`Unable to get latest block for ${adapterName} adapter on chain ${contractsChain}.`)
+        return ;
       }
+      
       const { number, timestamp } = block;
       if (!(number && timestamp)) {
         console.error(`Missing block number or timestamp for chain ${contractsChain}.`)
