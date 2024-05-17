@@ -85,15 +85,19 @@ export const getLatestBlockForZone = async (zoneId: string): Promise<{
   try {
     return await retry(async () => {
       const data = await requestWithTimeout<DefillamaLatestBlockForZoneQueryResult>(DefillamaLatestBlockForZoneDocument, variables)
-      const block = {
-        block: data.flat_defillama_txs_aggregate.aggregate?.max?.height,
-        timestamp: data.flat_defillama_txs_aggregate.aggregate?.max?.timestamp,
-      };
 
-      return block ? {
-        block: block.block,
-        timestamp: block.timestamp,
-      } : undefined;
+      if(!data) {
+        return undefined;
+      }
+
+      if(!Array.isArray(data.flat_defillama_txs) || data.flat_defillama_txs.length === 0) {
+        return undefined;
+      }
+
+      return {
+        block: data.flat_defillama_txs[0].height,
+        timestamp: data.flat_defillama_txs[0].timestamp,
+      };
     }, {
       retries: 5,
       minTimeout: 5000,
