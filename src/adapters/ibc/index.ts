@@ -15,7 +15,7 @@ export const getLatestBlockForZoneFromMoz = async (zoneId: string): Promise<{
 }> => {
   const block = await getLatestBlockForZone(zoneId);
   if (!block) {
-    throw new Error(`No block found for zone ${zoneId}`);
+    throw new LatestBlockNotFoundError(zoneId);
   }
   return {
     number: block.block,
@@ -27,7 +27,7 @@ export const getLatestBlockForZoneFromMoz = async (zoneId: string): Promise<{
 export const getLatestBlockHeightForZoneFromMoz = async (zoneId: string): Promise<number> => {
   const block = await getLatestBlockForZone(zoneId);
   if (!block) {
-    throw new Error(`No block found for zone ${zoneId}`);
+    throw new LatestBlockNotFoundError(zoneId);
   }
   return block.block;
 }
