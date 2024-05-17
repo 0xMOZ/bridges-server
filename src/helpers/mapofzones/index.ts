@@ -25,16 +25,11 @@ const requestWithTimeout = async <T>(query: RequestDocument, variables = {}, tim
     }, timeout);
   });
 
-  try {
-    const data = await Promise.race([
-      graphQLClient.request(query, variables) as T,
-      timeoutPromise,
-    ]);
-    return data;
-  } catch (error) {
-    console.error('GraphQL request error:', error);
-    throw error;
-  }
+  const data = await Promise.race([
+    graphQLClient.request(query, variables) as T,
+    timeoutPromise,
+  ]);
+  return data;
 };
 
 
@@ -53,9 +48,7 @@ export const getSupportedChains = async (): Promise<
   }, {
     retries: 5,
     minTimeout: 5000,
-    onRetry: (e, attempt) => {
-      console.log(`Error fetching supported chains`)
-      console.error(e);
+    onRetry: (_e, attempt) => {
       console.log(`Retrying ${attempt} for fetching supported chains`)
     }
   });
@@ -101,9 +94,7 @@ export const getLatestBlockForZone = async (zoneId: string): Promise<{
     }, {
       retries: 5,
       minTimeout: 5000,
-      onRetry: (e, attempt) => {
-        console.log(`Error fetching latest block for ${zoneId}`)
-        console.error(e);
+      onRetry: (_e, attempt) => {
         console.log(`Retrying ${attempt} for fetching latest block for ${zoneId}`)
       }
     });
@@ -146,9 +137,7 @@ export const getBlockFromTimestamp = async (timestamp: number, chainId: string, 
     }, {
       retries: 5,
       minTimeout: 5000,
-      onRetry: (e, attempt) => {
-        console.log(`Error fetching data for ${chainId} at ${position} block from ${timestamp}`)
-        console.error(e);
+      onRetry: (_e, attempt) => {
         console.log(`Retrying ${attempt} for ${chainId} at ${position} block from ${timestamp}`)
       }
     });
@@ -179,9 +168,7 @@ export const getZoneDataByBlock = async (
     , {
       retries: 5,
       minTimeout: 5000,
-      onRetry: (e, attempt) => {
-        console.log(`Error fetching data for ${zoneName} from block ${fromBlock} to ${toBlock}`)
-        console.error(e);
+      onRetry: (_e, attempt) => {
         console.log(`Retrying ${attempt} for ${zoneName} from block ${fromBlock} to ${toBlock}`)
       }
     });
