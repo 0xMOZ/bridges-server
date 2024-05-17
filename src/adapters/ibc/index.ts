@@ -47,9 +47,9 @@ export const findChainIdFromChainName = (bridgeNetwork: BridgeNetwork, chainName
 export const newIBCBridgeNetwork = async(bridgeNetwork: BridgeNetwork) => {
   const chains = await supportedChainsFromMoz();
 
-  bridgeNetwork.chains = chains.map((chain) => chain.zone_name);
+  bridgeNetwork.chains = chains.map((chain) => chain.zone_name.toLowerCase());
   const chainMapping: { [key: string]: string } = chains.reduce<{ [key: string]: string }>((acc, chain) => {
-    acc[chain.zone_name] = chain.zone_id;
+    acc[chain.zone_name.toLowerCase()] = chain.zone_id;
     return acc;
   }, {});
 
@@ -73,7 +73,7 @@ export const excludedChains: string[] = []
 
 export const supportedChainsFromMoz = async (): Promise<ChainFromMapOfZones[]> => {
   return getSupportedChains().then((chains) => {
-    return chains.filter((chain) => [chain.zone_id, chain.zone_name].every((x) => !excludedChains.includes(x)));
+    return chains.filter((chain) => [chain.zone_id, chain.zone_name.toLowerCase()].every((x) => !excludedChains.includes(x)));
   });
 }
 
