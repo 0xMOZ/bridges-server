@@ -32,15 +32,15 @@ export const getLatestBlockHeightForZoneFromMoz = async (zoneId: string): Promis
   return block.block;
 }
 
-export const findChainIdFromChainName = (bridgeNetwork: BridgeNetwork, chainName: string) => {
+export const findChainId = (bridgeNetwork: BridgeNetwork, chain: string) => {
   if (bridgeNetwork.chainMapping === undefined) {
     throw new Error("Chain mapping is undefined for ibc bridge network.");
   }
 
-  for(const key of Object.keys(bridgeNetwork.chainMapping)) {
-    if(key.toLowerCase() === chainName.toLowerCase()) {
-      return bridgeNetwork.chainMapping[key];
-    }
+  if (bridgeNetwork.chainMapping[chain]) {
+    return bridgeNetwork.chainMapping[chain];
+  } else if (Object.values(bridgeNetwork.chainMapping).includes(chain)) {
+    return chain;
   }
 }
 
@@ -62,7 +62,7 @@ export const ibcGetBlockFromTimestamp = async (bridge: BridgeNetwork, timestamp:
   if(position === undefined) {
     throw new Error("Position is required for ibcGetBlockFromTimestamp");
   }
-  const chainId = findChainIdFromChainName(bridge, chainName);
+  const chainId = findChainId(bridge, chainName);
   if(chainId === undefined) {
     throw new Error(`Could not find chain id for chain name ${chainName}`);
   }
@@ -82,7 +82,7 @@ const chainExports = (ibcBridgeNetwork: BridgeNetwork) => {
 
   const chainBreakdown = {} as BridgeAdapter;
   chainNames.forEach((chainName) => {
-    const chainId = findChainIdFromChainName(ibcBridgeNetwork, chainName);
+    const chainId = findChainId(ibcBridgeNetwork, chainName);
     if(chainId) {
       chainBreakdown[chainName.toLowerCase()] = getIbcVolumeByZoneId(chainId);
     }
