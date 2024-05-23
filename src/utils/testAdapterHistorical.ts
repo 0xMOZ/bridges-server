@@ -58,7 +58,7 @@ export const runAdapterHistorical = async (
     : maxBlocksToQueryByChain.default;
   
   if(bridgeNetwork.bridgeDbName == 'ibc') {
-    maxBlocksToQuery = 5000;
+    maxBlocksToQuery = 2000;
   }
 
   const useChainBlocks = !(nonBlocksChains.includes(chainContractsAreOn) || ["ibc"].includes(bridgeDbName));

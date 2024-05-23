@@ -402,7 +402,7 @@ export const runAdapterHistorical = async (
 
   // to reduce calls to moz api
   if(bridgeDbName === 'ibc') {
-    maxBlocksToQuery = 5000;
+    maxBlocksToQuery = 2000;
   }
 
   const useChainBlocks = !(nonBlocksChains.includes(chainContractsAreOn) || ["ibc"].includes(bridgeDbName));
