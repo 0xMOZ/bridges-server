@@ -76,9 +76,6 @@ export const getSupportedChains = async (): Promise<
   }, {
     retries: 5,
     minTimeout: 5000,
-    onRetry: (_e, attempt) => {
-      console.log(`Retrying ${attempt} for fetching supported chains`)
-    }
   });
   
   if (!data) {
@@ -128,9 +125,6 @@ export const getLatestBlockForZone = async (zoneId: string): Promise<{
     }, {
       retries: 5,
       minTimeout: 5000,
-      onRetry: (_e, attempt) => {
-        console.log(`Retrying ${attempt} for fetching latest block for ${zoneId}`)
-      }
     });
   } catch(e) {
     console.error(`Max attempts reached for fetching latest block for ${zoneId}`);
@@ -171,9 +165,6 @@ export const getBlockFromTimestamp = async (timestamp: number, chainId: string, 
     }, {
       retries: 5,
       minTimeout: 5000,
-      onRetry: (_e, attempt) => {
-        console.log(`Retrying ${attempt} for ${chainId} at ${position} block from ${timestamp}`)
-      }
     });
 
     return block ? {
@@ -202,9 +193,6 @@ export const getZoneDataByBlock = async (
     , {
       retries: 5,
       minTimeout: 5000,
-      onRetry: (_e, attempt) => {
-        console.log(`Retrying ${attempt} for ${zoneName} from block ${fromBlock} to ${toBlock}`)
-      }
     });
   }
   catch(e) {
