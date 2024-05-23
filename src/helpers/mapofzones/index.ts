@@ -75,7 +75,6 @@ export const getSupportedChains = async (): Promise<
     return await requestWithTimeout(DefillamaSupportedZonesDocument, variables);
   }, {
     retries: 5,
-    minTimeout: 5000,
   });
   
   if (!data) {
@@ -124,7 +123,6 @@ export const getLatestBlockForZone = async (zoneId: string): Promise<{
       };
     }, {
       retries: 5,
-      minTimeout: 5000,
     });
   } catch(e) {
     console.error(`Max attempts reached for fetching latest block for ${zoneId}`);
@@ -164,7 +162,6 @@ export const getBlockFromTimestamp = async (timestamp: number, chainId: string, 
       return result.flat_defillama_txs[0].height;
     }, {
       retries: 5,
-      minTimeout: 5000,
     });
 
     return block ? {
@@ -192,7 +189,6 @@ export const getZoneDataByBlock = async (
     }
     , {
       retries: 5,
-      minTimeout: 5000,
     });
   }
   catch(e) {
