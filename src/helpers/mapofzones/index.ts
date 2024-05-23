@@ -13,8 +13,6 @@ import {
   DefillamaLatestBlockForZoneDocument,
 } from "./IBCTxsPage/__generated__/IBCTxsTable.query.generated";
 import retry from "async-retry"
-
-import { convertToUnixTimestamp } from "../../utils/date";
 const endpoint = "https://api2.mapofzones.com/v1/graphql";
 const graphQLClient = new GraphQLClient(endpoint);
 
@@ -228,8 +226,9 @@ export const getIbcVolumeByZoneId = (chainId: string) => {
           to = tx.source_address;
         }
 
-        const timestamp = convertToUnixTimestamp(new Date(tx.timestamp)) * 1000; 
-        
+        const date = new Date(tx.timestamp.replace(' ', 'T') + 'Z');
+        const unixTimestamp = Math.floor(date.getTime());
+
         return {  
           blockNumber: tx.height,
           txHash: tx.tx_hash,
@@ -240,7 +239,7 @@ export const getIbcVolumeByZoneId = (chainId: string) => {
           isDeposit,
           isUSDVolume: true,
           txsCountedAs: 1,
-          timestamp,
+          timestamp: unixTimestamp,
         } as EventData;
       }
     );
