@@ -1,13 +1,13 @@
 import { BridgeNetwork } from "../../data/types";
 import { BridgeAdapter } from "../../helpers/bridgeAdapter.type";
 import { 
-  ChainFromMapOfZones, 
   getBlockFromTimestamp, 
   getIbcVolumeByZoneId, 
-  getSupportedChains,
   getLatestBlockForZone
 } from "../../helpers/mapofzones";
+import bridges from "../../data/bridgeNetworkData";
 
+const ibcBridgeNetwork = bridges.find((bridge) => bridge.bridgeDbName === "ibc");
 
 export const getLatestBlockForZoneFromMoz = async (zoneId: string): Promise<{
   number: number;
@@ -44,20 +44,6 @@ export const findChainId = (bridgeNetwork: BridgeNetwork, chain: string) => {
   }
 }
 
-export const newIBCBridgeNetwork = async(bridgeNetwork: BridgeNetwork) => {
-  const chains = await supportedChainsFromMoz();
-
-  bridgeNetwork.chains = chains.map((chain) => chain.zone_name.toLowerCase());
-  const chainMapping: { [key: string]: string } = chains.reduce<{ [key: string]: string }>((acc, chain) => {
-    acc[chain.zone_name.toLowerCase()] = chain.zone_id;
-    return acc;
-  }, {});
-
-  bridgeNetwork.chainMapping = chainMapping;
-
-  return bridgeNetwork;
-}
-
 export const ibcGetBlockFromTimestamp = async (bridge: BridgeNetwork, timestamp: number, chainName: string, position?: 'First' | 'Last') => {
   if(position === undefined) {
     throw new Error("Position is required for ibcGetBlockFromTimestamp");
@@ -69,15 +55,11 @@ export const ibcGetBlockFromTimestamp = async (bridge: BridgeNetwork, timestamp:
   return await getBlockFromTimestamp(timestamp, chainId, position);
 }
 
-export const excludedChains: string[] = []
+const chainExports = () => {
+  if (ibcBridgeNetwork === undefined) {
+    throw new Error("Could not find ibc bridge network.");
+  }
 
-export const supportedChainsFromMoz = async (): Promise<ChainFromMapOfZones[]> => {
-  return getSupportedChains().then((chains) => {
-    return chains.filter((chain) => [chain.zone_id, chain.zone_name.toLowerCase()].every((x) => !excludedChains.includes(x)));
-  });
-}
-
-const chainExports = (ibcBridgeNetwork: BridgeNetwork) => {
   const chainNames = ibcBridgeNetwork.chains;
 
   const chainBreakdown = {} as BridgeAdapter;
@@ -90,14 +72,6 @@ const chainExports = (ibcBridgeNetwork: BridgeNetwork) => {
   return chainBreakdown;
 };
 
-const adapter: BridgeAdapter = {} as BridgeAdapter;
-
-export const newIBCAdapter = (ibcBridgeNetwork: BridgeNetwork) => {
-  if (ibcBridgeNetwork.chainMapping === undefined) {
-    throw new Error("Chain mapping is undefined for ibc bridge network.");
-  }
-
-  return chainExports(ibcBridgeNetwork);
-}
+const adapter: BridgeAdapter = chainExports();
 
 export default adapter;
